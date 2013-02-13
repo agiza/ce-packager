@@ -9,7 +9,6 @@ include_once('installer/AppConfig.class.php');
 include_once('installer/Installer.class.php');
 include_once('installer/InputValidator.class.php');
 include_once('installer/phpmailer/class.phpmailer.php');
-include_once('lib/utils.php');
 
 // should be called whenever the installation fails
 // $error - the error to print to the user
@@ -30,6 +29,15 @@ function installationFailed($what_happened, $description, $what_to_do, $cleanup 
 	}
 	if (!empty($what_to_do)) logMessage(L_USER, $what_to_do);		
 	die(1);
+}
+
+
+function getVersionFromKconf($kconf, $label)
+{
+	if (preg_match("/".$label." = .*/", $kconf, $matches)) {
+		$firstPos = stripos($matches[0],"=");
+		return trim(substr($matches[0],1+$firstPos));
+	}
 }
 
 // constants
