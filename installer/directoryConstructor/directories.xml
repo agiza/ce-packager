@@ -22,7 +22,7 @@
 			<data skipFilesMode="true" skipFilesOwner="true" />
 		</sphinx>
 	</log>
-	<bin user="${OS_KALTURA_USER}" svnPath="/usr/local/kalsource/on-premise/trunk/packaging/bin/linux/64bit" mode="0640" filesMode="0750" />
+	<bin user="${OS_KALTURA_USER}" svnPath="/usr/local/kalsource/on-premise/trunk/packaging/bin/linux/64bit" mode="0770" filesMode="0770" />
 	<sphinx user="${OS_KALTURA_USER}" mode="0700" skipFilesMode="true" />
 	<tmp user="${OS_KALTURA_USER}" mode="0700" filesMode="0600">
 		<convert skipFilesOwner="true" />
@@ -60,7 +60,7 @@
 			<kmc skipFilesOwner="true">
 				<v5.27 svnPath="/usr/local/kalprod/flash/kmc/v5.27" skipFilesOwner="true" />
 				<login skipFilesOwner="true">
-					<v1.2.2 svnPath="/usr/local/kalprod/flash/kmc/login/v1.2.2" skipFilesOwner="true" />
+					<v1.2.3 svnPath="/usr/local/kalprod/flash/kmc/login/v1.2.3" skipFilesOwner="true" />
 				</login>
 			</kmc>
 			
