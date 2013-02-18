@@ -17,7 +17,8 @@ class AppConfigAttribute
 	const ETL_HOME_DIR							= 'ETL_HOME_DIR';
 	
 	const PHP_BIN								= 'PHP_BIN';
-	const HTTPD_BIN								= 'HTTPD_BIN';
+	const HTTPD_BIN								= 'HTTPD_BIN';	
+	const LOG_ROTATE_BIN						= 'LOG_ROTATE_BIN';
 	const IMAGE_MAGICK_BIN_DIR					= 'IMAGE_MAGICK_BIN_DIR';
 	const CURL_BIN_DIR							= 'CURL_BIN_DIR';
 	const SPHINX_BIN_DIR						= 'SPHINX_BIN_DIR';
@@ -298,13 +299,21 @@ class AppConfig
 		self::$app_config[AppConfigAttribute::DWH_PORT] = self::$app_config[AppConfigAttribute::DB1_PORT];
 		self::$app_config[AppConfigAttribute::DWH_DATABASE_NAME] = 'kalturadw';
 		self::$app_config[AppConfigAttribute::EVENTS_LOGS_DIR] = self::$app_config[AppConfigAttribute::LOG_DIR];
-		self::$app_config[AppConfigAttribute::EVENTS_WILDCARD] = '*kaltura.*_apache_access.log-.*';
+		self::$app_config[AppConfigAttribute::EVENTS_WILDCARD] = '.*kaltura.*_apache_access.log-.*';
 		self::$app_config[AppConfigAttribute::EVENTS_FETCH_METHOD] = 'local';
 		
 		// batch
 		self::$app_config[AppConfigAttribute::BATCH_HOST_NAME] = OsUtils::getComputerName();
 		self::$app_config[AppConfigAttribute::BATCH_PARTNER_PARTNER_ALIAS] = md5('-1kaltura partner');		
 				
+		// other configurations
+		if(!isset(self::$app_config[AppConfigAttribute::HTTPD_BIN]))
+			self::$app_config[AppConfigAttribute::HTTPD_BIN] = OsUtils::findBinary(array('apachectl', 'apache2ctl'));
+		if(!isset(self::$app_config[AppConfigAttribute::PHP_BIN]))
+			self::$app_config[AppConfigAttribute::PHP_BIN] = OsUtils::findBinary('php');
+		if(!isset(self::$app_config[AppConfigAttribute::LOG_ROTATE_BIN]))
+			self::$app_config[AppConfigAttribute::LOG_ROTATE_BIN] = OsUtils::findBinary('logrotate');
+			
 		// other configurations
 		self::$app_config[AppConfigAttribute::APACHE_RESTART_COMMAND] = self::$app_config[AppConfigAttribute::HTTPD_BIN].' -k restart';
 		date_default_timezone_set(self::$app_config[AppConfigAttribute::TIME_ZONE]);
@@ -436,7 +445,7 @@ class AppConfig
 		$key = base64_encode($str);
 		$data = @file_get_contents($kConfLocalFile);
 		$key_line = '/kaltura_activation_key(\s)*=(\s)*(.+)/';
-		$replacement = 'kaltura_activation_key = '.$key;
+		$replacement = 'kaltura_activation_key = "' . $key . '"';
 		$data = preg_replace($key_line, $replacement ,$data);
 		@file_put_contents($kConfLocalFile, $data);
 	}

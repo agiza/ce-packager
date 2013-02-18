@@ -11,7 +11,7 @@ class Installer {
 
 	// crteate a new installer, loads installation configurations from installation configuration file
 	public function __construct() {
-		$this->install_config = parse_ini_file(FILE_INSTALL_CONFIG, true);
+		$this->install_config = parse_ini_file(FILE_INSTALL_CONFIG, false);
 	}
 	
 	// detects if there are leftovers of an installation
@@ -23,14 +23,22 @@ class Installer {
 		$leftovers = null;		
 		
 		// symbloic links leftovers
-		foreach ($this->install_config['symlinks'] as $slink) {
-			list($target, $link) = explode(SYMLINK_SEPARATOR, AppConfig::replaceTokensInString($slink));	
-			if (is_file($link) && (strpos($link, AppConfig::get(AppConfigAttribute::BASE_DIR)) === false)) {
-				if ($report_only) {
-					$leftovers .= "   ".$link." symbolic link exists".PHP_EOL;
-				} else {
-					logMessage(L_USER, "Removing symbolic link $link");
-					OsUtils::recursiveDelete($link);
+		if(isset($this->install_config['symlinks']) && is_array($this->install_config['symlinks']))
+		{
+			foreach ($this->install_config['symlinks'] as $slink) 
+			{
+				list($target, $link) = explode(SYMLINK_SEPARATOR, AppConfig::replaceTokensInString($slink));	
+				if (is_file($link) && (strpos($link, AppConfig::get(AppConfigAttribute::BASE_DIR)) === false)) 
+				{
+					if ($report_only) 
+					{
+						$leftovers .= "   ".$link." symbolic link exists".PHP_EOL;
+					} 
+					else 
+					{
+						logMessage(L_USER, "Removing symbolic link $link");
+						OsUtils::recursiveDelete($link);
+					}
 				}
 			}
 		}
@@ -56,8 +64,9 @@ class Installer {
 				$leftovers .= "   Target directory ".AppConfig::get(AppConfigAttribute::BASE_DIR)." already exists".PHP_EOL;
 			} else {
 				
-				foreach ($this->install_config['chkconfig'] as $service)
-					OsUtils::stopService($service);
+				if(isset($this->install_config['chkconfig']) && is_array($this->install_config['chkconfig']))
+					foreach ($this->install_config['chkconfig'] as $service)
+						OsUtils::stopService($service);
 				
 				logMessage(L_USER, "Deleting ".AppConfig::get(AppConfigAttribute::BASE_DIR));
 				OsUtils::recursiveDelete(AppConfig::get(AppConfigAttribute::BASE_DIR));			
@@ -112,13 +121,16 @@ class Installer {
 		}
 		
 		logMessage(L_USER, "Replacing configuration tokens in files");
-		foreach ($this->install_config['token_files'] as $tokenFile) 
+		if(isset($this->install_config['token_files']) && is_array($this->install_config['token_files']))
 		{
-			$files = glob(AppConfig::replaceTokensInString($tokenFile));
-			foreach($files as $file)
+			foreach ($this->install_config['token_files'] as $tokenFile) 
 			{
-				if (!AppConfig::replaceTokensInFile($file))
-					return "Failed to replace tokens in $file";
+				$files = glob(AppConfig::replaceTokensInString($tokenFile));
+				foreach($files as $file)
+				{
+					if (!AppConfig::replaceTokensInFile($file))
+						return "Failed to replace tokens in $file";
+				}
 			}
 		}
 	
@@ -187,38 +199,53 @@ class Installer {
 		}
 		
 		logMessage(L_USER, "Creating system symbolic links");
-		foreach ($this->install_config['symlinks'] as $slink) {
-			list($target, $link) = explode(SYMLINK_SEPARATOR, AppConfig::replaceTokensInString($slink));
-			
-			if(!file_exists(dirname($link)))
-				mkdir(dirname($link), 0755, true);
+		if(isset($this->install_config['symlinks']) && is_array($this->install_config['symlinks']))
+		{
+			foreach ($this->install_config['symlinks'] as $slink) 
+			{
+				list($target, $link) = explode(SYMLINK_SEPARATOR, AppConfig::replaceTokensInString($slink));
 				
-			if(file_exists($link))
-				unlink($link);
+				if(!file_exists(dirname($link)))
+					mkdir(dirname($link), 0755, true);
 					
-			if (symlink($target, $link)) {
-				logMessage(L_INFO, "Created symbolic link $link -> $target");
-			} else {
-				logMessage(L_INFO, "Failed to create symbolic link from $link to $target, retyring..");
-				unlink($link);
-				symlink($target, $link);
+				if(file_exists($link))
+					unlink($link);
+						
+				if (symlink($target, $link)) 
+				{
+					logMessage(L_INFO, "Created symbolic link $link -> $target");
+				} 
+				else 
+				{
+					logMessage(L_INFO, "Failed to create symbolic link from $link to $target, retyring..");
+					unlink($link);
+					symlink($target, $link);
+				}
 			}
 		}
 		
 		//update uninstaller config
-		AppConfig::updateUninstallerConfig($this->install_config['symlinks']);
+		if(isset($this->install_config['symlinks']) && is_array($this->install_config['symlinks']))
+			AppConfig::updateUninstallerConfig($this->install_config['symlinks']);
 		
 		if (strcasecmp(AppConfig::get(AppConfigAttribute::KALTURA_VERSION_TYPE), K_CE_TYPE) == 0) {
 			AppConfig::simMafteach();
 		}
 	
 		logMessage(L_USER, "Deploying uiconfs in order to configure the application");
-		foreach ($this->install_config['uiconfs_2'] as $uiconfapp) {
-			$to_deploy = AppConfig::replaceTokensInString($uiconfapp);
-			if (OsUtils::execute(sprintf("%s %s/deployment/uiconf/deploy_v2.php --ini=%s", AppConfig::get(AppConfigAttribute::PHP_BIN), AppConfig::get(AppConfigAttribute::APP_DIR), $to_deploy))) {
-				logMessage(L_INFO, "Deployed uiconf $to_deploy");
-			} else {
-				return "Failed to deploy uiconf $to_deploy";
+		if(isset($this->install_config['uiconfs_2']) && is_array($this->install_config['uiconfs_2']))
+		{
+			foreach($this->install_config['uiconfs_2'] as $uiconfapp)
+			{
+				$to_deploy = AppConfig::replaceTokensInString($uiconfapp);
+				if(OsUtils::execute(sprintf("%s %s/deployment/uiconf/deploy_v2.php --ini=%s", AppConfig::get(AppConfigAttribute::PHP_BIN), AppConfig::get(AppConfigAttribute::APP_DIR), $to_deploy)))
+				{
+					logMessage(L_INFO, "Deployed uiconf $to_deploy");
+				}
+				else
+				{
+					return "Failed to deploy uiconf $to_deploy";
+				}
 			}
 		}
 				
@@ -248,9 +275,63 @@ class Installer {
 		if(!$this->createTemplateContent())
 			return "Failed to create template content";
 		
+		if (AppConfig::get(AppConfigAttribute::RED5_INSTALL))
+		{
+			if(!$this->installRed5())
+				return "Failed to install red5";
+		}
+					
 		OsUtils::execute('cp ../package/version.ini ' . AppConfig::get(AppConfigAttribute::APP_DIR) . '/configurations/');
 		
+		logMessage(L_USER, "Verifying installation");
+		if(!$this->verifyInstallation())
+			return "Failed to verify installation";
+		
 		return null;
+	}
+	
+	private function verifyInstallation()
+	{
+		$dirName = AppConfig::get(AppConfigAttribute::APP_DIR) . '/tests/sanity';
+		if(!file_exists($dirName) || !is_dir($dirName))
+		{
+			logMessage(L_ERROR, "Defaults sanity test files directory [$dirName] is not a valid directory");
+			return false;
+		}
+		$dirName = realpath($dirName);
+		
+		$configPath = "$dirName/lib/config.ini";
+		if(!file_exists($configPath) || !is_file($configPath) || !parse_ini_file($configPath, true))
+		{
+			logMessage(L_ERROR, "Sanity test configuration file [$configPath] is not a valid ini file");
+			return false;
+		}
+		
+		$dir = dir($dirName);
+		/* @var $dir Directory */
+		
+		$fileNames = array();
+		$errors = array();
+		while (false !== ($fileName = $dir->read())) 
+		{
+			if(preg_match('/^\d+\.\w+\.php$/', $fileName))
+				$fileNames[] = $fileName;
+		}
+		$dir->close();
+		sort($fileNames);
+		
+		$returnValue = null;
+		foreach($fileNames as $fileName)
+		{
+			$filePath = realpath("$dirName/$fileName");
+		
+			if (!OsUtils::execute(AppConfig::get(AppConfigAttribute::PHP_BIN) . " $filePath $configPath")) {
+				logMessage(L_ERROR, "Verification failed [$filePath]");
+				return false;
+			}
+		}
+		
+		return true;
 	}
 	
 	// detects if there are databases leftovers
@@ -259,6 +340,10 @@ class Installer {
 	// $should_drop - whether to drop the databases that are found or not (default - false) 
 	// returns null if no leftovers are found or a text containing all the leftovers found
 	private function detectDatabases($db_params, $should_drop=false) {
+		
+		if(!isset($this->install_config['databases']) || !is_array($this->install_config['databases']))
+			return null;
+			
 		$verify = null;
 		foreach ($this->install_config['databases'] as $db) {
 			$result = DatabaseUtils::dbExists($db_params, $db);
@@ -333,9 +418,23 @@ class Installer {
 	
 	public function installRed5 ()
 	{
-		OsUtils::execute("dos2unix " . AppConfig::get(AppConfigAttribute::BIN_DIR) ."/red5/red5");
-		OsUtils::execute("ln -s ". AppConfig::get(AppConfigAttribute::BIN_DIR) ."/red5/red5 /etc/init.d/red5");
-		OsUtils::execute("/etc/init.d/red5 start");
+		if(!OsUtils::execute("dos2unix " . AppConfig::get(AppConfigAttribute::BIN_DIR) ."/red5/red5"))
+		{
+			logMessage(L_ERROR, "Failed running dos2unix on red5 directory");
+			return false;
+		}
+		
+		if(!OsUtils::execute("ln -s ". AppConfig::get(AppConfigAttribute::BIN_DIR) ."/red5/red5 /etc/init.d/red5"))
+		{
+			logMessage(L_ERROR, "Failed creating symlink [/etc/init.d/red5]");
+			return false;
+		}
+		
+		if(!OsUtils::execute("/etc/init.d/red5 start"))
+		{
+			logMessage(L_ERROR, "Failed starting red5");
+			return false;
+		}
 		OsUtils::executeInBackground('chkconfig red5 on');
 		
 		//Replace rtmp_url parameter in the local.ini configuration file
@@ -356,9 +455,25 @@ class Installer {
 		logMessage(L_USER, "If you are insterested in recording entries from webcam, please adjust the RTMP server URL in each of the following uiConfs:\r\n". implode("\r\n", $uiconfIds));
 	    logMessage(L_USER, "By replacing 'rtmp://yoursite.com/oflaDemo' with 'rtmp://". AppConfig::get(AppConfigAttribute::ENVIRONMENT_NAME) . "/oflaDemo");
 		
-		OsUtils::execute("mv ". AppConfig::get(AppConfigAttribute::BIN_DIR) . "/red5/webapps/oflaDemo/streams " . AppConfig::get(AppConfigAttribute::BIN_DIR). "/red5/webapps/oflaDemo/streams_x");
-		OsUtils::execute ("ln -s " .AppConfig::get(AppConfigAttribute::WEB_DIR). "/content/webcam " . AppConfig::get(AppConfigAttribute::BIN_DIR) ."/red5/webapps/oflaDemo/streams");
-		OsUtils::execute ("ln -s " .AppConfig::get(AppConfigAttribute::WEB_DIR). "/content " . AppConfig::get(AppConfigAttribute::BIN_DIR) . "/red5/webapps/oflaDemo/streams");
+		if(!OsUtils::execute("mv ". AppConfig::get(AppConfigAttribute::BIN_DIR) . "/red5/webapps/oflaDemo/streams " . AppConfig::get(AppConfigAttribute::BIN_DIR). "/red5/webapps/oflaDemo/streams_x"))
+		{
+			logMessage(L_ERROR, "Failed renaming oflaDemo streams");
+			return false;
+		}
+		
+		if(!OsUtils::execute ("ln -s " .AppConfig::get(AppConfigAttribute::WEB_DIR). "/content/webcam " . AppConfig::get(AppConfigAttribute::BIN_DIR) ."/red5/webapps/oflaDemo/streams"))
+		{
+			logMessage(L_ERROR, "Failed creating symlink [" .AppConfig::get(AppConfigAttribute::WEB_DIR). "/content/webcam] [" . AppConfig::get(AppConfigAttribute::BIN_DIR) ."/red5/webapps/oflaDemo/streams]");
+			return false;
+		}
+		
+		if(!OsUtils::execute ("ln -s " .AppConfig::get(AppConfigAttribute::WEB_DIR). "/content " . AppConfig::get(AppConfigAttribute::BIN_DIR) . "/red5/webapps/oflaDemo/streams"))
+		{
+			logMessage(L_ERROR, "Failed creating symlink [" .AppConfig::get(AppConfigAttribute::WEB_DIR). "/content] [" . AppConfig::get(AppConfigAttribute::BIN_DIR) ."/red5/webapps/oflaDemo/streams]");
+			return false;
+		}
+		
+		return true;
 	}
 	
 	private function extractKCWUiconfIds ()
