@@ -397,7 +397,7 @@ class Installer {
 		//Retrieve KCW uiconf ids
 		$uiconfIds = $this->extractKCWUiconfIds($app);
 		logMessage(L_USER, "If you are insterested in recording entries from webcam, please adjust the RTMP server URL in each of the following uiConfs:\r\n". implode("\r\n", $uiconfIds));
-	    logMessage(L_USER, "By replacing 'rtmp://yoursite.com/oflaDemo' with 'rtmp://". $app->get('ENVIRONMENT_NAME') . "/oflaDemo");
+	    logMessage(L_USER, "By replacing 'rtmp://yoursite.com/oflaDemo' with 'rtmp://". $app->get('BASE_HOST_NO_PORT') . "/oflaDemo");
 		
 		OsUtils::execute("mv ". $app->get('BIN_DIR') . "/red5/webapps/oflaDemo/streams " . $app->get('BIN_DIR'). "/red5/webapps/oflaDemo/streams_x");
 		OsUtils::execute ("ln -s " .$app->get('WEB_DIR'). "/content/webcam " . $app->get('BIN_DIR') ."/red5/webapps/oflaDemo/streams");
