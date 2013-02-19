@@ -190,16 +190,16 @@ class UserInput
 						"Input is not valid", 
 						InputValidator::createYesNoValidator(), 
 						null);
-		$this->getInput(AppConfigAttribute::RED5_INSTALL, 
-						"Would you like to install Red5 on this machine? (Y/n)", 
-						"Please input yes/no.", 
-						InputValidator::createYesNoValidator(), 
-						"no");
 		$this->getInput(AppConfigAttribute::SPHINX_DB_HOST,
 						"Sphinx host (leave empty if Sphinx is running on this machine).", 
 						null, 
 						InputValidator::createHostValidator(), 
 						'127.0.0.1');
+		$this->getInput(AppConfigAttribute::ENVIRONMENT_PROTOCOL, 
+						"Environment protocol - enter http/https", 
+						null, 
+						null, 
+						'http');
 						
 		$this->saveInput();	
 	}
