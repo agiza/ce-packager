@@ -92,7 +92,7 @@ function deleteTextFromFile($filePath, $text){
 	
 $silentRun = false;
 if($argc > 1 && $argv[1] == '-s') $silentRun = true;
-$config = parse_ini_file("uninstall.ini");
+$config = parse_ini_file(dirname(__FILE__)."/uninstall.ini");
 $success = true;
 echo 'Uninstaller will fully remove the Kaltura software from your system.'.PHP_EOL;
 echo 'Databases and any uploaded content will also be removed.'.PHP_EOL;
@@ -118,20 +118,22 @@ if(is_array($config['symlinks']))
 	}
 }
 
-echo 'Stopping sphinx daemon and sphinx... ';
-if (execute($config['BASE_DIR'].'/app/plugins/sphinx_search/scripts/watch.stop.sh')) {
-	echo 'OK'.PHP_EOL;
-} else {
-	echo 'Failed'.PHP_EOL;
-	$success = false;
-}
 
-echo 'Stopping the batch manager... ';
-if (execute($config['BASE_DIR'].'/app/scripts/serviceBatchMgr.sh stop')) {
-	echo 'OK'.PHP_EOL;
-} else {
-	echo 'Failed'.PHP_EOL;
-	$success = false;
+if(is_array($config['chkconfig']))
+{
+	foreach ($config['chkconfig'] as $service)
+	{
+		echo "Stopping $service... ";
+		if (execute("/etc/ini.d/$service stop"))
+		{
+			echo 'OK'.PHP_EOL;
+		}
+		else 
+		{
+			echo 'Failed'.PHP_EOL;
+			$success = false;
+		}
+	}
 }
 
 echo 'Deleting dwh pentaho directories... ';
@@ -178,8 +180,8 @@ if (execute("rm -rf ".$config['BASE_DIR'])) {
 echo "Removing apache and red5 symlinks...";
 if (!execute("rm -f /etc/init.d/red5"))
 	echo "Failed to remove the red5 symlink from /etc/init.d/red5, maybe red5 was not installed..";
-if (!execute("rm -f /etc/httpd/conf.d/my_kaltura.ssl.conf"))
-	echo "Failed to delete my_kaltura.ssl.conf symlink from /etc/httpd/conf.d";
+if (!execute("rm -f /etc/httpd/conf.d/kaltura.conf"))
+	echo "Failed to delete kaltura.conf symlink from /etc/httpd/conf.d";
 
 	
 if ($success) echo 'Uninstall finished successfully'.PHP_EOL;
